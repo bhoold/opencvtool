@@ -14,7 +14,7 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 public:
-	BOOL update(CString file);
+	BOOL update();
 	BOOL RegisterWindowClass(HINSTANCE hInstance);
 	afx_msg void OnPaint();
 	CString m_pic_path;

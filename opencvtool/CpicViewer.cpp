@@ -5,6 +5,11 @@
 #include "opencvtool.h"
 #include "CpicViewer.h"
 
+#include "opencvtoolDlg.h"
+#include "Copencv.h"
+
+Copencv ocv;
+
 
 // CpicViewer
 
@@ -31,7 +36,7 @@ END_MESSAGE_MAP()
 
 BOOL CpicViewer::RegisterWindowClass(HINSTANCE hInstance)
 {
-	LPCWSTR className = _T("CPicWindow");
+	LPCSTR className = _T("CPicWindow");
 	WNDCLASS windowclass;
 	if (hInstance)
 		hInstance = AfxGetInstanceHandle();
@@ -58,11 +63,12 @@ BOOL CpicViewer::RegisterWindowClass(HINSTANCE hInstance)
 }
 
 
-BOOL CpicViewer::update(CString file)
+BOOL CpicViewer::update()
 {
-	m_pic_path = file;
+	CopencvtoolDlg *pParentDlg = (CopencvtoolDlg*)this->GetParent();
+	m_pic_path = (*pParentDlg).m_sel_pic;
 	InvalidateRect(NULL, TRUE);
-	return 0;
+	return TRUE;
 }
 
 
@@ -78,14 +84,47 @@ void CpicViewer::OnPaint()
 	if (m_pic_path.IsEmpty()) {
 		//dc.MoveTo(0, 0);
 		//dc.LineTo(rect.right, rect.bottom);
+		ocv.empty();
 		CWnd::OnPaint();
 	}
 	else {
+		CopencvtoolDlg *pParentDlg = (CopencvtoolDlg*)this->GetParent();
+
 		int nWidth = rect.Width();
 		int nHeight = rect.Height();
 
 		CImage image;
-		image.Load(m_pic_path);
+		CString oldFile;
+		ocv.getFile(oldFile);
+		if (oldFile == m_pic_path) {
+			ocv.resetImg();
+		}
+		else {
+			ocv.loadImg(m_pic_path);
+		}
+
+		
+		if (BST_CHECKED == pParentDlg->m_btnCheck_cvtcolor.GetCheck()) {
+			ColorConversionCodes cvtClrVal = (ColorConversionCodes)pParentDlg->m_listbox_cvtcolor_type.GetCurSel();
+			//pParentDlg->m_listbox_cvtcolor_type.GetText(pParentDlg->m_listbox_cvtcolor_type.GetCurSel(), cvtColor);
+			ocv.cvtcolor(cvtClrVal);
+		}
+		
+		if (BST_CHECKED == pParentDlg->m_btnCheck_inverted.GetCheck()) {
+			ocv.inverted();
+		}
+
+		if (BST_CHECKED == pParentDlg->m_btnCheck_threshold.GetCheck()) {
+			int nThresh, nMaxval, nThreshType;
+			CString threshType;
+			nThresh = pParentDlg->m_slider_threshold_thresh.GetPos();
+			nMaxval = pParentDlg->m_slider_threshold_maxval.GetPos();
+			nThreshType = pParentDlg->m_listbox_threshold_type.GetCurSel() + 1;
+			ocv.threshold(nThresh, nMaxval, nThreshType);
+		}
+
+		ocv.outImg(&image);
+
 		int nImgWidth = image.GetWidth();
 		int nImgHeight = image.GetHeight();
 
